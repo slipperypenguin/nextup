@@ -10,6 +10,9 @@ A Rust terminal application that randomizes a list of names. Useful for daily st
 - **Configurable**: Customizable meeting duration, title, and timer visibility
 
 
+<img width="1914" height="1074" alt="nextup-screenshot" src="https://github.com/user-attachments/assets/c0174654-937f-4308-9cfd-e565975139b8" />
+
+
 ## Prerequisites
 - Rust 1.70 or later
 - A terminal that supports Unicode (for timer icons)
