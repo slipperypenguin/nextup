@@ -31,7 +31,7 @@ impl<'a> UI<'a> {
                     Constraint::Min(3),     // Names widget (flexible)
                     Constraint::Length(3),  // Help widget (fixed)
                 ].as_ref())
-                .split(f.size())
+                .split(f.area())
         } else {
             // with timer: names, timer, and help
             Layout::default()
@@ -41,7 +41,7 @@ impl<'a> UI<'a> {
                     Constraint::Length(5),  // Timer widget (fixed)
                     Constraint::Length(3),  // Help widget (fixed)
                 ].as_ref())
-                .split(f.size())
+                .split(f.area())
         };
 
         // Render names widget

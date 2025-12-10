@@ -65,7 +65,7 @@ impl App {
 
     /// Shuffle the names randomly
     fn shuffle_names(&mut self) {
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
         self.names.shuffle(&mut rng);
         self.reset_per_person_timers();
     }
