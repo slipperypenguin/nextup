@@ -19,8 +19,34 @@ A Rust terminal application that randomizes a list of names. Useful for daily st
 
 
 ## Installation
+
+### Cargo
+```bash
+cargo install nextup-tui
+```
+
+### Homebrew
+```bash
+brew tap slipperypenguin/homebrew-tap
+brew install nextup-tui
+```
+
+### Local
 1. Clone or create the project directory
-2. A team.txt file is included with example names (feel free to replace with your team):
+2. Build the project:
+   ```bash
+   cargo build --release
+   ```
+   - The executable will be at `target/release/nextup`
+
+## Usage
+
+### Basic Usage
+```bash
+nextup --help
+```
+
+A team.txt file is included with example names (feel free to replace with your team):
    ```
    Stan Marsh
    Kyle Broflovski
@@ -30,19 +56,7 @@ A Rust terminal application that randomizes a list of names. Useful for daily st
    Butters Stotch
    ```
 
-
-## Building
-```bash
-# Build the project
-cargo build --release
-
-# The executable will be at target/release/nextup
-```
-
-
-## Usage
-
-### Basic Usage
+### Local Install Usage
 ```bash
 # Run with default settings
 ./target/release/nextup
