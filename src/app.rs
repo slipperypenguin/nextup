@@ -74,13 +74,12 @@ impl App {
 
         // Try to read response with timeout
         // This is a simple heuristic; if we can't detect, we'll default to dark
-        if let Ok(true) = event::poll(StdDuration::from_millis(100)) {
-            if let Ok(Event::Key(_)) = event::read() {
+        if let Ok(true) = event::poll(StdDuration::from_millis(100))
+            && let Ok(Event::Key(_)) = event::read() {
                 // If we got any response, try to parse it
                 // This is a simplified check - in practice, OSC responses are complex
                 // For now, we'll use an environment variable as a more reliable fallback
             }
-        }
 
         // Fallback: Check common environment variables
         if let Ok(term_program) = std::env::var("TERM_PROGRAM") {
@@ -91,15 +90,13 @@ impl App {
         }
 
         // Check COLORFGBG (set by some terminals: "foreground;background")
-        if let Ok(colorfgbg) = std::env::var("COLORFGBG") {
-            if let Some(bg) = colorfgbg.split(';').last() {
-                if let Ok(bg_num) = bg.parse::<u8>() {
+        if let Ok(colorfgbg) = std::env::var("COLORFGBG")
+            && let Some(bg) = colorfgbg.split(';').next_back()
+                && let Ok(bg_num) = bg.parse::<u8>() {
                     // In COLORFGBG, lower numbers (0-7) typically mean dark colors
                     // Higher numbers (8-15) typically mean light colors
                     return Some(bg_num < 8);
                 }
-            }
-        }
 
         // Default assumption: dark background (most common for terminals)
         Some(true)
@@ -255,11 +252,10 @@ impl App {
             terminal.draw(|f| ui.render(f))?;
 
             // Handle input with timeout to allow for regular updates
-            if event::poll(Duration::from_millis(500))? {
-                if let Event::Key(key) = event::read()? {
+            if event::poll(Duration::from_millis(500))?
+                && let Event::Key(key) = event::read()? {
                     self.handle_input(key)?;
                 }
-            }
 
             if self.should_quit {
                 break;
