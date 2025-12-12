@@ -1,6 +1,6 @@
 [package]
 name = "nextup-tui"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 license = "MIT"
 description = "A terminal application that randomizes a list of names. Useful for daily standup meetings."
