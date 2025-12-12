@@ -12,6 +12,7 @@ use error::Result;
 
 #[derive(Parser)]
 #[command(name = "nextup")]
+#[command(version)]
 #[command(about = "A simple tool that randomizes a list of names for daily standups.")]
 struct Args {
     // Window title
