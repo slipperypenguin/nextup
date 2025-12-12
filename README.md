@@ -9,8 +9,7 @@ A Rust terminal application that randomizes a list of names. Useful for daily st
 - **Keyboard shortcuts**: Easy navigation and control
 - **Configurable**: Customizable meeting duration, title, and timer visibility
 
-
-<img width="1914" height="1074" alt="nextup-screenshot" src="https://github.com/user-attachments/assets/c0174654-937f-4308-9cfd-e565975139b8" />
+<img width="1024" height="404" alt="carbon-2" src="https://github.com/user-attachments/assets/21bee2fe-d162-49a8-a9b2-069c776fda3a" />
 
 
 ## Prerequisites
