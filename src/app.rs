@@ -1,20 +1,20 @@
-use std::time::{Duration, Instant};
-use std::fs;
-use rand::seq::SliceRandom;
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyModifiers},
     execute,
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+    terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
-use ratatui::{
-    backend::CrosstermBackend,
-    Terminal,
-};
+use rand::seq::SliceRandom;
+use ratatui::{Terminal, backend::CrosstermBackend};
+use std::fs;
 use std::io;
+use std::time::{Duration, Instant};
 
 use crate::config::Config;
 use crate::error::{AppError, Result};
 use crate::ui::UI;
+
+// Embed the default team.txt file at compile time
+const DEFAULT_TEAM_CONTENT: &str = include_str!("../team.txt");
 
 /// Main application state
 pub struct App {
@@ -25,6 +25,7 @@ pub struct App {
     timer_start: Instant,
     last_ppt_update: Instant,
     should_quit: bool,
+    is_dark_background: bool,
 }
 
 impl App {
@@ -38,6 +39,9 @@ impl App {
 
         let per_person_timers = vec![Duration::ZERO; names.len()];
 
+        // Detect terminal background (default to dark if detection fails)
+        let is_dark_background = Self::detect_dark_background().unwrap_or(true);
+
         Ok(Self {
             config,
             names,
@@ -46,13 +50,74 @@ impl App {
             timer_start: Instant::now(),
             last_ppt_update: Instant::now(),
             should_quit: false,
+            is_dark_background,
         })
     }
 
-    /// Load names from a file
+    /// Attempt to detect if terminal has a dark background.
+    /// Returns None if detection fails, Some(true) for dark, Some(false) for light
+    fn detect_dark_background() -> Option<bool> {
+        use std::io::Write;
+        use std::time::Duration as StdDuration;
+
+        // Try to query terminal background color using OSC 11
+        // Not all terminals support this, so we'll use a timeout
+        let mut stdout = io::stdout();
+
+        // Send OSC 11 query (request background color)
+        if write!(stdout, "\x1b]11;?\x1b\\").is_err() {
+            return None;
+        }
+        if stdout.flush().is_err() {
+            return None;
+        }
+
+        // Try to read response with timeout
+        // This is a simple heuristic; if we can't detect, we'll default to dark
+        if let Ok(true) = event::poll(StdDuration::from_millis(100))
+            && let Ok(Event::Key(_)) = event::read() {
+                // If we got any response, try to parse it
+                // This is a simplified check - in practice, OSC responses are complex
+                // For now, we'll use an environment variable as a more reliable fallback
+            }
+
+        // Fallback: Check common environment variables
+        if let Ok(term_program) = std::env::var("TERM_PROGRAM") {
+            // Some terminal emulators set helpful env vars
+            if term_program.contains("light") {
+                return Some(false);
+            }
+        }
+
+        // Check COLORFGBG (set by some terminals: "foreground;background")
+        if let Ok(colorfgbg) = std::env::var("COLORFGBG")
+            && let Some(bg) = colorfgbg.split(';').next_back()
+                && let Ok(bg_num) = bg.parse::<u8>() {
+                    // In COLORFGBG, lower numbers (0-7) typically mean dark colors
+                    // Higher numbers (8-15) typically mean light colors
+                    return Some(bg_num < 8);
+                }
+
+        // Default assumption: dark background (most common for terminals)
+        Some(true)
+    }
+
+    /// Load names from a file, falling back to embedded default if file not found
     fn load_names(filename: &str) -> Result<Vec<String>> {
-        let content = fs::read_to_string(filename)
-            .map_err(|e| AppError::NamesFileError(e))?;
+        // Try to read from file first
+        let content = match fs::read_to_string(filename) {
+            Ok(content) => content,
+            Err(e) => {
+                // If the file doesn't exist, and we're using the default filename,
+                // fall back to the embedded content
+                if filename == "team.txt" && e.kind() == io::ErrorKind::NotFound {
+                    DEFAULT_TEAM_CONTENT.to_string()
+                } else {
+                    // For other errors or custom filenames, propagate the error
+                    return Err(AppError::NamesFileError(e).into());
+                }
+            }
+        };
 
         let names: Vec<String> = content
             .lines()
@@ -121,7 +186,8 @@ impl App {
             }
 
             // Ctrl+C or 'q' -- Quit
-            (KeyCode::Char('c'), KeyModifiers::CONTROL) | (KeyCode::Char('q'), KeyModifiers::NONE) => {
+            (KeyCode::Char('c'), KeyModifiers::CONTROL)
+            | (KeyCode::Char('q'), KeyModifiers::NONE) => {
                 self.should_quit = true;
             }
 
@@ -173,7 +239,10 @@ impl App {
     }
 
     /// Internal run loop that handles events and rendering
-    async fn run_app(&mut self, terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<()> {
+    async fn run_app(
+        &mut self,
+        terminal: &mut Terminal<CrosstermBackend<io::Stdout>>,
+    ) -> Result<()> {
         loop {
             // Update timers
             self.update_per_person_timers();
@@ -183,11 +252,10 @@ impl App {
             terminal.draw(|f| ui.render(f))?;
 
             // Handle input with timeout to allow for regular updates
-            if event::poll(Duration::from_millis(500))? {
-                if let Event::Key(key) = event::read()? {
+            if event::poll(Duration::from_millis(500))?
+                && let Event::Key(key) = event::read()? {
                     self.handle_input(key)?;
                 }
-            }
 
             if self.should_quit {
                 break;
@@ -212,5 +280,9 @@ impl App {
 
     pub fn current_person_index(&self) -> usize {
         self.current_person_index
+    }
+
+    pub fn is_dark_background(&self) -> bool {
+        self.is_dark_background
     }
 }

@@ -2,9 +2,9 @@ use clap::Parser;
 use std::time::Duration;
 
 mod app;
-mod ui;
 mod config;
 mod error;
+mod ui;
 
 use app::App;
 use config::Config;
@@ -12,6 +12,7 @@ use error::Result;
 
 #[derive(Parser)]
 #[command(name = "nextup")]
+#[command(version)]
 #[command(about = "A simple tool that randomizes a list of names for daily standups.")]
 struct Args {
     // Window title
@@ -39,7 +40,7 @@ async fn main() -> Result<()> {
     let config = Config {
         title: args.title,
         names_file: args.names,
-        duration: Duration::from_secs(args.duration * 60),  // convert minutes to seconds
+        duration: Duration::from_secs(args.duration * 60), // convert minutes to seconds
         hide_timer: args.hide_timer,
     };
 
