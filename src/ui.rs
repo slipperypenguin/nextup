@@ -101,10 +101,11 @@ impl<'a> UI<'a> {
         f.render_stateful_widget(list, area, &mut state);
     }
 
-    /// Render the timer widget
+    /// Render the timer widget with adaptive colors for light/dark backgrounds
     fn render_timer_widget(&self, f: &mut Frame, area: Rect) {
         let remaining = self.app.remaining_time();
         let total = self.app.config().duration;
+        let is_dark = self.app.is_dark_background();
 
         // calculate progress (0.0 to 1.0)
         let progress = if total.as_secs() > 0 {
@@ -117,14 +118,29 @@ impl<'a> UI<'a> {
         // choose icon based on remaining time
         let icon = if remaining.as_secs() > 180 { "⏳" } else { "⌛" };
 
-        // TODO: cleanup
-        // create timer display
-        //let timer_text = format!("{} {} left", icon, format_duration(remaining));
+        // Choose text color based on terminal background
+        // For dark backgrounds: use light text (white)
+        // For light backgrounds: use dark text (black/dark gray) for contrast
+        let text_color = if is_dark {
+            Color::White
+        } else {
+            Color::Black
+        };
+
+        // Create timer display with background for better visibility
+        // The background ensures text is readable when gauge passes over it
+        let text_bg = if is_dark {
+            Color::Rgb(40, 40, 40)  // Dark background for light text
+        } else {
+            Color::Rgb(240, 240, 240)  // Light background for dark text
+        };
 
         let timer_text = Span::styled(
             format!("{} {} left", icon, format_duration(remaining)),
-            // Style::new().italic().bold().fg(Color::White),
-            Style::default().fg(Color::White).add_modifier(Modifier::BOLD)
+            Style::default()
+                .fg(text_color)
+                .bg(text_bg)
+                .add_modifier(Modifier::BOLD)
         );
 
         // create gauge color gradient style based on remaining time
@@ -175,7 +191,6 @@ impl<'a> UI<'a> {
         f.render_widget(paragraph, area);
     }
 }
-
 
 /// Format duration for display
 fn format_duration(duration: Duration) -> String {

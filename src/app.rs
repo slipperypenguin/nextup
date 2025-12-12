@@ -28,6 +28,7 @@ pub struct App {
     timer_start: Instant,
     last_ppt_update: Instant,
     should_quit: bool,
+    is_dark_background: bool,
 }
 
 impl App {
@@ -41,6 +42,9 @@ impl App {
 
         let per_person_timers = vec![Duration::ZERO; names.len()];
 
+        // Detect terminal background (default to dark if detection fails)
+        let is_dark_background = Self::detect_dark_background().unwrap_or(true);
+
         Ok(Self {
             config,
             names,
@@ -49,7 +53,59 @@ impl App {
             timer_start: Instant::now(),
             last_ppt_update: Instant::now(),
             should_quit: false,
+            is_dark_background
         })
+    }
+
+    /// Attempt to detect if terminal has a dark background.
+    /// Returns None if detection fails, Some(true) for dark, Some(false) for light
+    fn detect_dark_background() -> Option<bool> {
+        use std::io::Write;
+        use std::time::Duration as StdDuration;
+
+        // Try to query terminal background color using OSC 11
+        // Not all terminals support this, so we'll use a timeout
+        let mut stdout = io::stdout();
+
+        // Send OSC 11 query (request background color)
+        if write!(stdout, "\x1b]11;?\x1b\\").is_err() {
+            return None;
+        }
+        if stdout.flush().is_err() {
+            return None;
+        }
+
+        // Try to read response with timeout
+        // This is a simple heuristic; if we can't detect, we'll default to dark
+        if let Ok(true) = event::poll(StdDuration::from_millis(100)) {
+            if let Ok(Event::Key(_)) = event::read() {
+                // If we got any response, try to parse it
+                // This is a simplified check - in practice, OSC responses are complex
+                // For now, we'll use an environment variable as a more reliable fallback
+            }
+        }
+
+        // Fallback: Check common environment variables
+        if let Ok(term_program) = std::env::var("TERM_PROGRAM") {
+            // Some terminal emulators set helpful env vars
+            if term_program.contains("light") {
+                return Some(false);
+            }
+        }
+
+        // Check COLORFGBG (set by some terminals: "foreground;background")
+        if let Ok(colorfgbg) = std::env::var("COLORFGBG") {
+            if let Some(bg) = colorfgbg.split(';').last() {
+                if let Ok(bg_num) = bg.parse::<u8>() {
+                    // In COLORFGBG, lower numbers (0-7) typically mean dark colors
+                    // Higher numbers (8-15) typically mean light colors
+                    return Some(bg_num < 8);
+                }
+            }
+        }
+
+        // Default assumption: dark background (most common for terminals)
+        Some(true)
     }
 
     /// Load names from a file, falling back to embedded default if file not found
@@ -227,5 +283,9 @@ impl App {
 
     pub fn current_person_index(&self) -> usize {
         self.current_person_index
+    }
+
+    pub fn is_dark_background(&self) -> bool {
+        self.is_dark_background
     }
 }
