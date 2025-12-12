@@ -1,16 +1,13 @@
-use std::time::{Duration, Instant};
-use std::fs;
-use rand::seq::SliceRandom;
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyModifiers},
     execute,
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+    terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
-use ratatui::{
-    backend::CrosstermBackend,
-    Terminal,
-};
+use rand::seq::SliceRandom;
+use ratatui::{Terminal, backend::CrosstermBackend};
+use std::fs;
 use std::io;
+use std::time::{Duration, Instant};
 
 use crate::config::Config;
 use crate::error::{AppError, Result};
@@ -53,7 +50,7 @@ impl App {
             timer_start: Instant::now(),
             last_ppt_update: Instant::now(),
             should_quit: false,
-            is_dark_background
+            is_dark_background,
         })
     }
 
@@ -192,7 +189,8 @@ impl App {
             }
 
             // Ctrl+C or 'q' -- Quit
-            (KeyCode::Char('c'), KeyModifiers::CONTROL) | (KeyCode::Char('q'), KeyModifiers::NONE) => {
+            (KeyCode::Char('c'), KeyModifiers::CONTROL)
+            | (KeyCode::Char('q'), KeyModifiers::NONE) => {
                 self.should_quit = true;
             }
 
@@ -244,7 +242,10 @@ impl App {
     }
 
     /// Internal run loop that handles events and rendering
-    async fn run_app(&mut self, terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<()> {
+    async fn run_app(
+        &mut self,
+        terminal: &mut Terminal<CrosstermBackend<io::Stdout>>,
+    ) -> Result<()> {
         loop {
             // Update timers
             self.update_per_person_timers();
