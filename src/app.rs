@@ -16,6 +16,9 @@ use crate::config::Config;
 use crate::error::{AppError, Result};
 use crate::ui::UI;
 
+// Embed the default team.txt file at compile time
+const DEFAULT_TEAM_CONTENT: &str = include_str!("../team.txt");
+
 /// Main application state
 pub struct App {
     config: Config,
@@ -49,10 +52,22 @@ impl App {
         })
     }
 
-    /// Load names from a file
+    /// Load names from a file, falling back to embedded default if file not found
     fn load_names(filename: &str) -> Result<Vec<String>> {
-        let content = fs::read_to_string(filename)
-            .map_err(|e| AppError::NamesFileError(e))?;
+        // Try to read from file first
+        let content = match fs::read_to_string(filename) {
+            Ok(content) => content,
+            Err(e) => {
+                // If the file doesn't exist, and we're using the default filename,
+                // fall back to the embedded content
+                if filename == "team.txt" && e.kind() == io::ErrorKind::NotFound {
+                    DEFAULT_TEAM_CONTENT.to_string()
+                } else {
+                    // For other errors or custom filenames, propagate the error
+                    return Err(AppError::NamesFileError(e).into());
+                }
+            }
+        };
 
         let names: Vec<String> = content
             .lines()
