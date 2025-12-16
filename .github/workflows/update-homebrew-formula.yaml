@@ -1,9 +1,9 @@
 name: Update Homebrew Formula
 
 on:
-  push:
-    tags:
-      - "v*"
+  release:
+    types:
+      - published
   workflow_dispatch:
 
 jobs:
@@ -19,11 +19,17 @@ jobs:
       cancel-in-progress: false
 
     steps:
-      - name: Derive version + tarball URL from tag
+      - name: Derive version + tarball URL from release
         id: meta
         run: |
-          echo "version=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
-          echo "tar_url=https://github.com/${OWNER_REPO}/archive/refs/tags/${GITHUB_REF_NAME}.tar.gz" >> "$GITHUB_OUTPUT"
+          # Use GITHUB_REF_NAME for tag-based triggers, or get from release event
+          if [ "${{ github.event_name }}" = "release" ]; then
+            VERSION="${{ github.event.release.tag_name }}"
+          else
+            VERSION="${GITHUB_REF_NAME}"
+          fi
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tar_url=https://github.com/${OWNER_REPO}/archive/refs/tags/${VERSION}.tar.gz" >> "$GITHUB_OUTPUT"
 
       - name: Compute sha256
         id: sha
